@@ -13,7 +13,7 @@ foreach ($moduleFile in $moduleFiles) {
         Import-Module (Join-Path $modulesPath $moduleFile) -ErrorAction Stop
         Write-Host "[INFO] Módulo $moduleFile carregado com sucesso." -ForegroundColor Green
     } catch {
-        Write-Host "[ERRO] Falha ao carregar módulo $moduleFile: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[ERRO] Falha ao carregar módulo ${moduleFile}: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
@@ -296,4 +296,3 @@ try {
     }
     Write-Host "[$(Get-Date)] [INFO] Motor a vapor desligado." -ForegroundColor DarkRed
 }
-
