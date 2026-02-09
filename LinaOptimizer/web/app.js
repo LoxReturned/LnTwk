@@ -3,13 +3,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[LinaOptimizer] Iniciando aplicação...');
 
-    const langToggle = document.getElementById('lang-toggle');
+    const langPtBtn = document.getElementById('lang-pt');
+    const langEnBtn = document.getElementById('lang-en');
     const categoryPicker = document.getElementById('category-picker');
     const tweakListContainer = document.getElementById('tweak-list-container');
     const searchInput = document.getElementById('search-input');
     const systemInfoContainer = document.getElementById('system-info-container');
     const optimizationScoreDisplay = document.getElementById('optimization-score');
-    const restorePointBtn = document.getElementById('create-restore-point-btn');
+    const restorePointBtn = document.getElementById('create-restore-point');
     const gameListContainer = document.getElementById('game-list-container');
     const appListContainer = document.getElementById('app-list-container');
     const toastContainer = document.getElementById('toast-container');
@@ -238,11 +239,22 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateSystemInfo() {
         if (systemInfoContainer) {
             systemInfoContainer.innerHTML = `
-                <h2>INFORMAÇÕES DO SISTEMA</h2>
-                <p><strong>CPU:</strong> ${systemInfo.cpu || 'N/A'}</p>
-                <p><strong>GPU:</strong> ${systemInfo.gpu || 'N/A'}</p>
-                <p><strong>RAM:</strong> ${systemInfo.ram || 'N/A'}</p>
-                <p><strong>SO:</strong> ${systemInfo.os || 'Windows 10/11'}</p>
+                <div class="tweak-card glassmorphism">
+                    <h3>CPU</h3>
+                    <p>${systemInfo.cpu || 'N/A'}</p>
+                </div>
+                <div class="tweak-card glassmorphism">
+                    <h3>GPU</h3>
+                    <p>${systemInfo.gpu || 'N/A'}</p>
+                </div>
+                <div class="tweak-card glassmorphism">
+                    <h3>RAM</h3>
+                    <p>${systemInfo.ram || 'N/A'}</p>
+                </div>
+                <div class="tweak-card glassmorphism">
+                    <h3>SO</h3>
+                    <p>${systemInfo.os || 'Windows 10/11'}</p>
+                </div>
             `;
         }
     }
@@ -253,19 +265,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const score = totalTweaks > 0 ? Math.round((activeTweaks / totalTweaks) * 100) : 0;
         if (optimizationScoreDisplay) {
             optimizationScoreDisplay.innerHTML = `
-                <h2>SCORE DE OTIMIZAÇÃO</h2>
-                <p>Seu sistema está otimizado em <strong>${score}%</strong>.</p>
+                <div class="tweak-card glassmorphism">
+                    <h3>SCORE DE OTIMIZAÇÃO</h3>
+                    <p>Seu sistema está otimizado em <strong>${score}%</strong>.</p>
+                </div>
             `;
         }
     }
 
     // --- Event Listeners --- //
-    if (langToggle) {
-        langToggle.addEventListener('click', () => {
-            currentLang = currentLang === 'pt' ? 'en' : 'pt';
-            langToggle.textContent = currentLang.toUpperCase();
-            console.log('[Lang] Idioma alterado para:', currentLang);
-        });
+    function setLanguage(lang) {
+        currentLang = lang;
+        if (langPtBtn && langEnBtn) {
+            langPtBtn.classList.toggle('active', lang === 'pt');
+            langEnBtn.classList.toggle('active', lang === 'en');
+        }
+        console.log('[Lang] Idioma alterado para:', currentLang);
+    }
+
+    if (langPtBtn) {
+        langPtBtn.addEventListener('click', () => setLanguage('pt'));
+    }
+
+    if (langEnBtn) {
+        langEnBtn.addEventListener('click', () => setLanguage('en'));
     }
 
     if (restorePointBtn) {
