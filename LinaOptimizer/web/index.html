@@ -81,6 +81,7 @@
             align-items: center;
             gap: 15px;
             margin-right: 20px;
+            flex-wrap: wrap;
         }
 
         .lang-switcher button {
@@ -100,15 +101,30 @@
             box-shadow: 0 0 8px var(--glow-color);
         }
 
+        .social-icons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .social-icons a {
             color: var(--text-light);
-            font-size: 1.2em;
-            margin-left: 15px;
-            transition: color 0.3s ease;
+            font-size: 1.1em;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: var(--bg-light);
+            border: 1px solid var(--border-color);
+            transition: color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .social-icons a:hover {
-            color: var(--accent-blue);
+            color: var(--bg-dark);
+            background-color: var(--accent-blue);
+            box-shadow: 0 0 8px var(--glow-color);
         }
 
         main {
@@ -183,6 +199,14 @@
             background-color: #7b1fa2;
             box-shadow: 0 0 25px rgba(156, 39, 176, 0.7);
             transform: translateY(-2px);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
         }
 
         .section-title {
@@ -667,31 +691,34 @@
 
         <section class="system-info-section container">
             <h2 class="section-title" data-lang-key="system_info_title">INFORMAÇÕES DO SISTEMA</h2>
-            <div class="system-info-grid tweak-grid">
+            <div class="system-info-grid tweak-grid" id="system-info-container">
                 <!-- System Info Cards will be rendered here by app.js -->
+            </div>
+            <div class="system-info-grid tweak-grid" id="optimization-score">
+                <!-- Optimization score will be rendered here by app.js -->
             </div>
         </section>
 
-        <section class="tweaks-section container">
+        <section class="tweaks-section container content-section active" id="tweaks-section">
             <h2 class="section-title" data-lang-key="tweaks_title">OTIMIZAÇÃO DE SISTEMA</h2>
             <div class="category-picker" id="category-picker">
                 <!-- Category buttons will be rendered here by app.js -->
             </div>
-            <div class="tweak-grid" id="tweak-grid">
+            <div class="tweak-grid" id="tweak-list-container">
                 <!-- Tweak cards will be rendered here by app.js -->
             </div>
         </section>
 
-        <section class="games-section container">
+        <section class="games-section container content-section" id="games-section">
             <h2 class="section-title" data-lang-key="games_title">OTIMIZAÇÃO DE JOGOS</h2>
-            <div class="tweak-grid" id="games-grid">
+            <div class="tweak-grid" id="game-list-container">
                 <!-- Game cards will be rendered here by app.js -->
             </div>
         </section>
 
-        <section class="apps-section container">
+        <section class="apps-section container content-section" id="apps-section">
             <h2 class="section-title" data-lang-key="apps_title">APLICATIVOS ESSENCIAIS</h2>
-            <div class="tweak-grid" id="apps-grid">
+            <div class="tweak-grid" id="app-list-container">
                 <!-- App cards will be rendered here by app.js -->
             </div>
         </section>
