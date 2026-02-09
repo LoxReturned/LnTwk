@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinaOptimizer PRO - Ultimate Performance</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a0c;
+            --bg-medium: #1a1a1e;
+            --bg-light: #2a2a2e;
+            --text-light: #e0e0e0;
+            --text-medium: #b0b0b0;
+            --accent-blue: #00e6ff;
+            --accent-purple: #9c27b0;
+            --border-color: #3a3a3e;
+            --glow-color: rgba(0, 230, 255, 0.5);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+            --warning-color: #FFC107;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        header {
+            background-color: var(--bg-medium);
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-left: 20px;
+        }
+
+        .header-left img {
+            height: 35px;
+            filter: drop-shadow(0 0 5px var(--accent-blue));
+        }
+
+        .header-left h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8em;
+            margin: 0;
+            color: var(--text-light);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-right: 20px;
+        }
+
+        .lang-switcher button {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .lang-switcher button.active, .lang-switcher button:hover {
+            background-color: var(--accent-blue);
+            color: var(--bg-dark);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 8px var(--glow-color);
+        }
+
+        .social-icons a {
+            color: var(--text-light);
+            font-size: 1.2em;
+            margin-left: 15px;
+            transition: color 0.3s ease;
+        }
+
+        .social-icons a:hover {
+            color: var(--accent-blue);
+        }
+
+        main {
+            flex-grow: 1;
+            padding: 20px 0;
+        }
+
+        .hero-section {
+            text-align: center;
+            padding: 80px 20px;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #100f12 100%);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 40px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .hero-section h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3em;
+            color: var(--text-light);
+            margin-bottom: 15px;
+            animation: fadeIn 1s ease-out 0.2s backwards;
+        }
+
+        .hero-section p {
+            font-size: 1.1em;
+            color: var(--text-medium);
+            margin-bottom: 40px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeIn 1s ease-out 0.4s backwards;
+        }
+
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .hero-buttons button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            animation: slideUp 0.8s ease-out 0.6s backwards;
+        }
+
+        .hero-buttons .btn-primary {
+            background-color: var(--accent-blue);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px var(--glow-color);
+        }
+
+        .hero-buttons .btn-primary:hover {
+            background-color: #00b3cc;
+            box-shadow: 0 0 25px var(--glow-color);
+            transform: translateY(-2px);
+        }
+
+        .hero-buttons .btn-secondary {
+            background-color: var(--accent-purple);
+            color: var(--text-light);
+            box-shadow: 0 0 15px rgba(156, 39, 176, 0.5);
+        }
+
+        .hero-buttons .btn-secondary:hover {
+            background-color: #7b1fa2;
+            box-shadow: 0 0 25px rgba(156, 39, 176, 0.7);
+            transform: translateY(-2px);
+        }
+
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2em;
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--text-light);
+            position: relative;
+            padding-bottom: 10px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background-color: var(--accent-blue);
+            border-radius: 2px;
+        }
+
+        .category-picker {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            animation: slideUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .category-picker button {
+            background-color: var(--bg-light);
+            color: var(--text-medium);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-picker button.active, .category-picker button:hover {
+            background-color: var(--accent-blue);
+            color: var(--bg-dark);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+
+        .category-picker button .badge {
+            background-color: var(--bg-dark);
+            color: var(--accent-blue);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .category-picker button.active .badge {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+        }
+
+        .tweak-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 28px;
+            padding: 20px 0;
+            animation: fadeIn 1s ease-out 0.4s backwards;
+        }
+
+        .tweak-card {
+            background-color: var(--bg-medium);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .tweak-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .tweak-card h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4em;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--text-light);
+        }
+
+        .tweak-card p {
+            font-size: 0.9em;
+            color: var(--text-medium);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .tweak-card .status-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .tweak-card .status-toggle label {
+            position: relative;
+            display: inline-block;
+            width: 45px;
+            height: 25px;
+        }
+
+        .tweak-card .status-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .tweak-card .status-toggle .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 25px;
+        }
+
+        .tweak-card .status-toggle .slider:before {
+            position: absolute;
+            content: "";
+            height: 19px;
+            width: 19px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        .tweak-card .status-toggle input:checked + .slider {
+            background-color: var(--accent-blue);
+        }
+
+        .tweak-card .status-toggle input:focus + .slider {
+            box-shadow: 0 0 1px var(--accent-blue);
+        }
+
+        .tweak-card .status-toggle input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        .tweak-card .risk-badge {
+            background-color: #444;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .tweak-card .risk-badge.low { background-color: var(--success-color); }
+        .tweak-card .risk-badge.medium { background-color: var(--warning-color); }
+        .tweak-card .risk-badge.high { background-color: var(--error-color); }
+
+        .game-card {
+            background-color: var(--bg-medium);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .game-card h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4em;
+            margin: 0;
+            color: var(--text-light);
+        }
+
+        .game-card .game-status {
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .game-card .game-status.detected { color: var(--success-color); }
+        .game-card .game-status.not-found { color: var(--error-color); }
+
+        .game-card select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            font-size: 0.9em;
+        }
+
+        .game-card button {
+            background-color: var(--accent-blue);
+            color: var(--bg-dark);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .game-card button:hover {
+            background-color: #00b3cc;
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+
+        .app-card {
+            background-color: var(--bg-medium);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .app-card h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4em;
+            margin: 0;
+            color: var(--text-light);
+        }
+
+        .app-card p {
+            font-size: 0.9em;
+            color: var(--text-medium);
+            line-height: 1.6;
+        }
+
+        .app-card button {
+            background-color: var(--accent-blue);
+            color: var(--bg-dark);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .app-card button:hover {
+            background-color: #00b3cc;
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+
+        footer {
+            background-color: var(--bg-medium);
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.9em;
+            color: var(--text-medium);
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+
+        .footer-social a {
+            color: var(--text-medium);
+            margin: 0 10px;
+            font-size: 1.5em;
+            transition: color 0.3s ease;
+        }
+
+        .footer-social a:hover {
+            color: var(--accent-blue);
+        }
+
+        /* Tooltip Glassmorphism */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 300px;
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-light);
+            text-align: left;
+            border-radius: 8px;
+            padding: 15px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position above the element */
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--glass-border) transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .tooltip-content h4 {
+            font-family: 'Outfit', sans-serif;
+            margin-top: 0;
+            color: var(--accent-blue);
+        }
+
+        .tooltip-content p {
+            font-size: 0.85em;
+            color: var(--text-medium);
+            margin-bottom: 5px;
+        }
+
+        .tooltip-content .risk-badge {
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+        }
+
+        .toast {
+            background-color: var(--bg-medium);
+            color: var(--text-light);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(-20px);
+            animation: toastIn 0.5s forwards, toastOut 0.5s forwards 3s;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.success { border-left: 5px solid var(--success-color); }
+        .toast.error { border-left: 5px solid var(--error-color); }
+        .toast.info { border-left: 5px solid var(--accent-blue); }
+
+        .toast i {
+            font-size: 1.2em;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .header-left h1 {
+                font-size: 1.5em;
+            }
+            .hero-section h2 {
+                font-size: 2.2em;
+            }
+            .hero-buttons {
+                flex-direction: column;
+            }
+            .category-picker {
+                flex-direction: column;
+            }
+            .tweak-grid {
+                grid-template-columns: 1fr;
+            }
+            .tooltip .tooltiptext {
+                width: 90%;
+                left: 5%;
+                margin-left: 0;
+                transform: translateX(0);
+                bottom: auto;
+                top: 100%;
+                margin-top: 10px;
+            }
+            .tooltip .tooltiptext::after {
+                top: -5px;
+                left: 50%;
+                transform: translateX(-50%) rotate(180deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container nav">
+            <div class="header-left">
+                <img src="/assets/logo.png" alt="LinaOptimizer Logo">
+                <h1>LinaOptimizer <span style="color: var(--accent-blue);">PRO</span></h1>
+            </div>
+            <div class="header-right">
+                <div class="social-icons">
+                    <a href="https://www.youtube.com/@LinaSolutions" target="_blank"><i class="fab fa-youtube"></i></a>
+                    <a href="https://discord.gg/CFw33ukueK" target="_blank"><i class="fab fa-discord"></i></a>
+                </div>
+                <div class="lang-switcher">
+                    <button id="lang-pt" class="active">PT</button>
+                    <button id="lang-en">EN</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero-section">
+            <div class="container">
+                <h2 data-lang-key="hero_title">PERFORMANCE EXTREMA PARA SEU SETUP</h2>
+                <p data-lang-key="hero_description">Otimize seu Windows, reduza latência e ganhe FPS com a ferramenta de tweak mais avançada e segura.</p>
+                <div class="hero-buttons">
+                    <button class="btn-primary" id="activate-optimizations" data-lang-key="activate_optimizations">ATIVAR OTIMIZAÇÕES</button>
+                    <button class="btn-secondary" id="create-restore-point" data-lang-key="create_restore_point">CRIAR PONTO DE RESTAURAÇÃO</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="system-info-section container">
+            <h2 class="section-title" data-lang-key="system_info_title">INFORMAÇÕES DO SISTEMA</h2>
+            <div class="system-info-grid tweak-grid">
+                <!-- System Info Cards will be rendered here by app.js -->
+            </div>
+        </section>
+
+        <section class="tweaks-section container">
+            <h2 class="section-title" data-lang-key="tweaks_title">OTIMIZAÇÃO DE SISTEMA</h2>
+            <div class="category-picker" id="category-picker">
+                <!-- Category buttons will be rendered here by app.js -->
+            </div>
+            <div class="tweak-grid" id="tweak-grid">
+                <!-- Tweak cards will be rendered here by app.js -->
+            </div>
+        </section>
+
+        <section class="games-section container">
+            <h2 class="section-title" data-lang-key="games_title">OTIMIZAÇÃO DE JOGOS</h2>
+            <div class="tweak-grid" id="games-grid">
+                <!-- Game cards will be rendered here by app.js -->
+            </div>
+        </section>
+
+        <section class="apps-section container">
+            <h2 class="section-title" data-lang-key="apps_title">APLICATIVOS ESSENCIAIS</h2>
+            <div class="tweak-grid" id="apps-grid">
+                <!-- App cards will be rendered here by app.js -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 LinaOptimizer PRO. Todos os direitos reservados.</p>
+            <div class="footer-social">
+                <a href="https://www.youtube.com/@LinaSolutions" target="_blank"><i class="fab fa-youtube"></i></a>
+                <a href="https://discord.gg/CFw33ukueK" target="_blank"><i class="fab fa-discord"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <div id="toast-container"></div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

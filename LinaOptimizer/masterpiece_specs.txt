@@ -1,0 +1,21 @@
+ESPECIFICAÇÕES DE REFATORAÇÃO - LINAOPTIMIZER ULTIMATE (PASTEBIN EDITION)
+
+1. FRONTEND (UI/UX):
+- Navegação: Category Picker no topo (tabs horizontais) com badges de contagem.
+- Filtros: Busca por texto, Filtros rápidos (Ativados, Risco, Hardware).
+- Tweak Card: Compacto, Status Real (ON/OFF), Tooltip Rico (O que faz, Ativa/Desativa, Impacto, Reinício).
+- Design: Sistema 8pt, Fade separators (gradientes), Skeleton Shimmer, Toasts.
+- Header: Discord/YT no topo, sem logo.
+- Terminal: Filtros e botão copiar.
+
+2. BACKEND (POWERSHELL):
+- System Info: Endpoint /api/systeminfo (Hardware + Windows + Admin).
+- Hardware Class: LOW / MID / HIGH-END.
+- Detecção Real: Cada tweak tem um scriptblock de 'detect' (Registro, BCDEDIT, etc).
+- Auto-open: Browser abre automaticamente no start do servidor.
+
+3. SCHEMA DE TWEAK:
+- key, title, category, tags, risk, needsAdmin, needsRestart, impact, whatItDoes, enables, disables, detect, apply, hardwareConstraints.
+
+4. EXPANSÃO:
+- Adicionar dezenas de tweaks em Privacidade, Rede, Kernel, Input, Interface, Energia, Debloat, Segurança.

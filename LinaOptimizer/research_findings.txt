@@ -1,0 +1,25 @@
+NOVOS PROGRAMAS ESSENCIAIS PARA ADICIONAR:
+1. QuickCPU - Controle avançado de CPU, Core Parking e Frequency Scaling.
+2. ParkControl - Ajuste de Core Parking em tempo real sem reinício.
+3. TCP Optimizer - Otimização profunda de rede e registro TCP.
+4. Win10Debloater (GUI) - Scripts avançados de remoção de bloatware.
+5. BleachBit - Alternativa open-source e mais profunda ao CCleaner.
+
+TWEAKS DE JOGOS (Níveis Low/Medium/High):
+- FiveM: 
+  * Low: Desativar sombras, reduzir distância de render, cache agressivo.
+  * Medium: Sombras leves, distância média, streaming balanceado.
+  * High: Alta qualidade, texturas nítidas, prioridade máxima.
+- Valorant:
+  * Low: Prioridade de CPU alta, desativar otimizações de tela cheia, limpar logs.
+  * Medium: Prioridade acima do normal, otimizações de GPU leves.
+  * High: Configurações competitivas, latência ultra baixa (Reflex).
+- CS2:
+  * Low: Launch options (-lowfamily), remover vídeos de fundo, shader cache.
+  * Medium: Launch options balanceadas, prioridade de CPU.
+  * High: Máxima performance, latência NVIDIA Reflex.
+
+RECURSOS VISUAIS/SONOROS:
+- Sons: Cliques metálicos, vapor (hiss), engrenagens girando.
+- Animações: Partículas de fumaça (CSS/Canvas), rotação de engrenagens 3D-like, transições de opacidade.
+- Fontes: 'Cinzel Decorative', 'Special Elite' (estilo máquina de escrever), 'Bebas Neue'.

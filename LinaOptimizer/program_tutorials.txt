@@ -1,0 +1,45 @@
+LinaTweaks Ultimate - Guia de Programas Essenciais
+
+1. DDU (Display Driver Uninstaller)
+   Tutorial: Use para remover drivers de vídeo de forma limpa. Reinicie em Modo de Segurança, selecione 'GPU' e clique em 'Limpar e Reiniciar'.
+   Download: https://www.wagnardsoft.com/display-driver-uninstaller-ddu-
+
+2. ISLC (Intelligent Standby List Cleaner)
+   Tutorial: Limpa a memória standby do Windows para reduzir stuttering. Defina 'The list size is at least' para 1024 e 'Free memory is lower than' para metade da sua RAM. Clique em Start.
+   Download: https://www.wagnardsoft.com/ISLCw
+
+3. MSI Afterburner
+   Tutorial: Overclock e monitoramento. Use para ajustar a curva de fan e fazer undervolt para menores temperaturas. Integre com RTSS para ver FPS in-game.
+   Download: https://www.msi.com/Landing/afterburner/graphics-cards
+
+4. RTSS (RivaTuner Statistics Server)
+   Tutorial: O melhor limitador de FPS. Defina o 'Framerate limit' para a taxa de atualização do seu monitor ou um valor estável para frametimes perfeitos.
+   Download: https://www.guru3d.com/files-details/rtss-rivatuner-statistics-server-download.html
+
+5. Process Lasso
+   Tutorial: Gerencia prioridades de CPU. Clique com o botão direito no seu jogo > CPU Priority > Always > High. Use o 'Bitsum Highest Performance' power plan.
+   Download: https://bitsum.com/
+
+6. NVCleanstall
+   Tutorial: Instale drivers NVIDIA sem telemetria. Selecione os componentes básicos, marque 'Disable Installer Telemetry' e 'Perform a Clean Installation'.
+   Download: https://www.techpowerup.com/download/techpowerup-nvcleanstall/
+
+7. Autoruns
+   Tutorial: Desative programas que iniciam com o Windows. Vá na aba 'Logon' e desmarque o que não for essencial. Cuidado para não desativar drivers.
+   Download: https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns
+
+8. LatencyMon
+   Tutorial: Verifica se o sistema está apto para áudio em tempo real e jogos. Clique no botão de Play e deixe rodar por 5 minutos enquanto joga ou usa o PC.
+   Download: https://www.resplendence.com/latencymon
+
+9. TCP Optimizer
+   Tutorial: Otimização de rede. Execute como Admin, selecione sua velocidade de internet, escolha 'Optimal' na parte inferior e clique em Apply.
+   Download: https://www.speedguide.net/tcpoptimizer.php
+
+10. Winaero Tweaker
+    Tutorial: Centenas de ajustes visuais. Use para desativar atualizações automáticas, remover anúncios do Windows e personalizar o menu de contexto.
+    Download: https://winaero.com/winaero-tweaker/
+
+Método de Ponto de Restauração Estável:
+Comando: Checkpoint-Computer -Description "LinaTweaks Restore Point" -RestorePointType "MODIFY_SETTINGS"
+Nota: Requer privilégios de Administrador e o serviço de Proteção do Sistema deve estar ativado na unidade C:.

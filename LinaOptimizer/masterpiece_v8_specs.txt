@@ -1,0 +1,15 @@
+DIRETRIZES LINAOPTIMIZER MASTERPIECE V8.0
+
+1. PerformanceBrain.ps1: Coleta snapshot (CPU, GPU, RAM, Disco, Build, Admin) e classifica em LOW/MID/HIGH/EXTREME.
+2. BenchmarkEngine.ps1: Mede tempo de resposta, latência e uso de recursos antes/depois com Stopwatch real.
+3. TelemetryStore.ps1: Grava logs locais de ações e métricas em JSON.
+4. Detecção REAL: Todo tweak deve ter detect(), apply() e revert() baseados em Registro/Serviços/Policies.
+5. Recomendação Inteligente: Sugere tweaks baseados na classe de hardware e perfil de uso.
+6. Otimização de Jogos: 15 jogos com detecção de instalação e ajustes de prioridade/afinidade/configs.
+7. SafetyGuard.ps1: Restore points e backups de chaves alteradas.
+8. Backend Robusto: API JSON limpa (/api/system, /api/tweaks, /api/apply, /api/revert, /api/benchmark, /api/logs).
+9. Frontend Premium: PWA ultra-responsiva, Gestos, Dashboards, Tooltips ricos e busca em tempo real.
+10. AppsManager.ps1: Gerencia downloads seguros e tutoriais locais.
+11. Developer Mode: Console interno e logs visíveis.
+12. Ética e Segurança: Sem kernel drivers, sem malware, sem promessas mágicas.
+13. Diferencial: Transparência total e funcionamento 100% offline.
