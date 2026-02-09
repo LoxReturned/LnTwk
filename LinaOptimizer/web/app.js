@@ -4,14 +4,16 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[LinaOptimizer] Iniciando aplicação...');
 
     const langToggle = document.getElementById('lang-toggle');
+    const langPtBtn = document.getElementById('lang-pt');
+    const langEnBtn = document.getElementById('lang-en');
     const categoryPicker = document.getElementById('category-picker');
-    const tweakListContainer = document.getElementById('tweak-list-container');
+    const tweakListContainer = document.getElementById('tweak-list-container') || document.getElementById('tweak-grid');
     const searchInput = document.getElementById('search-input');
-    const systemInfoContainer = document.getElementById('system-info-container');
+    const systemInfoContainer = document.getElementById('system-info-container') || document.querySelector('.system-info-grid');
     const optimizationScoreDisplay = document.getElementById('optimization-score');
-    const restorePointBtn = document.getElementById('create-restore-point-btn');
-    const gameListContainer = document.getElementById('game-list-container');
-    const appListContainer = document.getElementById('app-list-container');
+    const restorePointBtn = document.getElementById('create-restore-point-btn') || document.getElementById('create-restore-point');
+    const gameListContainer = document.getElementById('game-list-container') || document.getElementById('games-grid');
+    const appListContainer = document.getElementById('app-list-container') || document.getElementById('apps-grid');
     const toastContainer = document.getElementById('toast-container');
     const mainContent = document.getElementById('main-content');
 
@@ -238,11 +240,22 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateSystemInfo() {
         if (systemInfoContainer) {
             systemInfoContainer.innerHTML = `
-                <h2>INFORMAÇÕES DO SISTEMA</h2>
-                <p><strong>CPU:</strong> ${systemInfo.cpu || 'N/A'}</p>
-                <p><strong>GPU:</strong> ${systemInfo.gpu || 'N/A'}</p>
-                <p><strong>RAM:</strong> ${systemInfo.ram || 'N/A'}</p>
-                <p><strong>SO:</strong> ${systemInfo.os || 'Windows 10/11'}</p>
+                <div class="tweak-card glassmorphism">
+                    <h3>CPU</h3>
+                    <p>${systemInfo.cpu || 'N/A'}</p>
+                </div>
+                <div class="tweak-card glassmorphism">
+                    <h3>GPU</h3>
+                    <p>${systemInfo.gpu || 'N/A'}</p>
+                </div>
+                <div class="tweak-card glassmorphism">
+                    <h3>RAM</h3>
+                    <p>${systemInfo.ram || 'N/A'}</p>
+                </div>
+                <div class="tweak-card glassmorphism">
+                    <h3>SO</h3>
+                    <p>${systemInfo.os || 'Windows 10/11'}</p>
+                </div>
             `;
         }
     }
@@ -266,6 +279,18 @@ document.addEventListener('DOMContentLoaded', () => {
             langToggle.textContent = currentLang.toUpperCase();
             console.log('[Lang] Idioma alterado para:', currentLang);
         });
+    }
+
+    if (langPtBtn && langEnBtn) {
+        const setActiveLang = (lang) => {
+            currentLang = lang;
+            langPtBtn.classList.toggle('active', lang === 'pt');
+            langEnBtn.classList.toggle('active', lang === 'en');
+            console.log('[Lang] Idioma alterado para:', currentLang);
+        };
+
+        langPtBtn.addEventListener('click', () => setActiveLang('pt'));
+        langEnBtn.addEventListener('click', () => setActiveLang('en'));
     }
 
     if (restorePointBtn) {

@@ -103,12 +103,22 @@
         .social-icons a {
             color: var(--text-light);
             font-size: 1.2em;
-            margin-left: 15px;
-            transition: color 0.3s ease;
+            margin-left: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background-color: var(--bg-light);
+            border: 1px solid var(--border-color);
+            transition: color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .social-icons a:hover {
             color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 8px var(--glow-color);
         }
 
         main {
@@ -258,6 +268,14 @@
             gap: 28px;
             padding: 20px 0;
             animation: fadeIn 1s ease-out 0.4s backwards;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
         }
 
         .tweak-card {
@@ -642,8 +660,8 @@
             </div>
             <div class="header-right">
                 <div class="social-icons">
-                    <a href="https://www.youtube.com/@LinaSolutions" target="_blank"><i class="fab fa-youtube"></i></a>
-                    <a href="https://discord.gg/CFw33ukueK" target="_blank"><i class="fab fa-discord"></i></a>
+                    <a href="https://www.youtube.com/@LinaSolutions" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                    <a href="https://discord.gg/CFw33ukueK" target="_blank" aria-label="Discord"><i class="fab fa-discord"></i></a>
                 </div>
                 <div class="lang-switcher">
                     <button id="lang-pt" class="active">PT</button>
@@ -660,38 +678,38 @@
                 <p data-lang-key="hero_description">Otimize seu Windows, reduza latência e ganhe FPS com a ferramenta de tweak mais avançada e segura.</p>
                 <div class="hero-buttons">
                     <button class="btn-primary" id="activate-optimizations" data-lang-key="activate_optimizations">ATIVAR OTIMIZAÇÕES</button>
-                    <button class="btn-secondary" id="create-restore-point" data-lang-key="create_restore_point">CRIAR PONTO DE RESTAURAÇÃO</button>
+                    <button class="btn-secondary" id="create-restore-point-btn" data-lang-key="create_restore_point">CRIAR PONTO DE RESTAURAÇÃO</button>
                 </div>
             </div>
         </section>
 
         <section class="system-info-section container">
             <h2 class="section-title" data-lang-key="system_info_title">INFORMAÇÕES DO SISTEMA</h2>
-            <div class="system-info-grid tweak-grid">
+            <div class="system-info-grid tweak-grid" id="system-info-container">
                 <!-- System Info Cards will be rendered here by app.js -->
             </div>
         </section>
 
-        <section class="tweaks-section container">
+        <section class="tweaks-section container content-section" id="tweaks-section">
             <h2 class="section-title" data-lang-key="tweaks_title">OTIMIZAÇÃO DE SISTEMA</h2>
             <div class="category-picker" id="category-picker">
                 <!-- Category buttons will be rendered here by app.js -->
             </div>
-            <div class="tweak-grid" id="tweak-grid">
+            <div class="tweak-grid" id="tweak-list-container">
                 <!-- Tweak cards will be rendered here by app.js -->
             </div>
         </section>
 
-        <section class="games-section container">
+        <section class="games-section container content-section" id="games-section">
             <h2 class="section-title" data-lang-key="games_title">OTIMIZAÇÃO DE JOGOS</h2>
-            <div class="tweak-grid" id="games-grid">
+            <div class="tweak-grid" id="game-list-container">
                 <!-- Game cards will be rendered here by app.js -->
             </div>
         </section>
 
-        <section class="apps-section container">
+        <section class="apps-section container content-section" id="apps-section">
             <h2 class="section-title" data-lang-key="apps_title">APLICATIVOS ESSENCIAIS</h2>
-            <div class="tweak-grid" id="apps-grid">
+            <div class="tweak-grid" id="app-list-container">
                 <!-- App cards will be rendered here by app.js -->
             </div>
         </section>
@@ -701,8 +719,8 @@
         <div class="container">
             <p>&copy; 2026 LinaOptimizer PRO. Todos os direitos reservados.</p>
             <div class="footer-social">
-                <a href="https://www.youtube.com/@LinaSolutions" target="_blank"><i class="fab fa-youtube"></i></a>
-                <a href="https://discord.gg/CFw33ukueK" target="_blank"><i class="fab fa-discord"></i></a>
+                <a href="https://www.youtube.com/@LinaSolutions" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                <a href="https://discord.gg/CFw33ukueK" target="_blank" aria-label="Discord"><i class="fab fa-discord"></i></a>
             </div>
         </div>
     </footer>
