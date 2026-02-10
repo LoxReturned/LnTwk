@@ -37,7 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
         apps: [],
         systemInfo: {},
         logs: [],
-        snapshots: JSON.parse(localStorage.getItem('linaoptimizer_snapshots') || '[]')
+        snapshots: JSON.parse(localStorage.getItem('linaoptimizer_snapshots') || '[]'),
+        apiBase: '',
+        apiResolved: false
     };
 
     const fallback = {
@@ -74,15 +76,51 @@ document.addEventListener('DOMContentLoaded', () => {
         dom.logsOutput.textContent = state.logs.slice(-30).map(i => `[${i.ts}] [${i.level.toUpperCase()}] ${i.action} ${JSON.stringify(i.data)}`).join('\n');
     }
 
-    async function api(url, options, fallbackData) {
-        try {
-            const res = await fetch(url, options);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return await res.json();
-        } catch (e) {
-            log('warn', 'api_fallback', { url, error: e.message });
-            return fallbackData;
+    async function resolveApiBase() {
+        if (state.apiResolved) return;
+
+        const candidates = [''];
+        if (window.location.port !== '8080') {
+            candidates.push('http://127.0.0.1:8080', 'http://localhost:8080');
         }
+
+        for (const base of candidates) {
+            try {
+                const r = await fetch(`${base}/api/system-info`, { method: 'GET' });
+                if (r.ok) {
+                    state.apiBase = base;
+                    state.apiResolved = true;
+                    log('info', 'api_base_resolved', { base: base || 'same-origin' });
+                    return;
+                }
+            } catch {
+                // tenta próximo candidato
+            }
+        }
+
+        state.apiBase = '';
+        state.apiResolved = true;
+        log('warn', 'api_base_unresolved', { mode: 'fallback_only' });
+    }
+
+    async function api(url, options = {}, fallbackData) {
+        await resolveApiBase();
+
+        const candidates = state.apiBase ? [`${state.apiBase}${url}`, url] : [url];
+        let lastError = null;
+
+        for (const target of candidates) {
+            try {
+                const res = await fetch(target, options);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (e) {
+                lastError = e;
+            }
+        }
+
+        log('warn', 'api_fallback', { url, error: lastError ? lastError.message : 'unknown' });
+        return fallbackData;
     }
 
     function riskMeta(risk) {
