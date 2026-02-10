@@ -13,7 +13,7 @@ foreach ($moduleFile in $moduleFiles) {
         Import-Module (Join-Path $modulesPath $moduleFile) -ErrorAction Stop
         Write-Host "[INFO] Módulo $moduleFile carregado com sucesso." -ForegroundColor Green
     } catch {
-        Write-Host "[ERRO] Falha ao carregar módulo $moduleFile: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[ERRO] Falha ao carregar módulo ${moduleFile}: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
@@ -74,6 +74,29 @@ function Configure-Firewall {
     }
 }
 
+function Get-ServerCapabilities {
+    return @{
+        architecture = @{
+            modular = $true
+            dependencies = $true
+            rollback = $true
+            globalRollback = $true
+            snapshot = $true
+            logs = @("json", "human")
+            dryRun = $true
+            modes = @("safe", "extreme", "insane")
+        }
+    }
+}
+
+function Get-ServerHealth {
+    return @{
+        status = "ok"
+        timestamp = (Get-Date).ToString("o")
+        capabilities = Get-ServerCapabilities
+    }
+}
+
 # --- Iniciar Servidor --- #
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://+:$port/")
@@ -100,7 +123,13 @@ try {
 
         # --- Rotas da API --- #
         if ($path -eq "/api/system-info" -and $method -eq "GET") {
-            Send-Json -Response $response -Data (Get-HardwareInfo)
+            Send-Json -Response $response -Data (Get-SystemInfo)
+        } elseif ($path -eq "/api/systeminfo" -and $method -eq "GET") {
+            Send-Json -Response $response -Data @{ systemInfo = (Get-SystemInfo) }
+        } elseif ($path -eq "/api/health" -and $method -eq "GET") {
+            Send-Json -Response $response -Data (Get-ServerHealth)
+        } elseif ($path -eq "/api/capabilities" -and $method -eq "GET") {
+            Send-Json -Response $response -Data (Get-ServerCapabilities)
         } elseif ($path -eq "/api/tweaks" -and $method -eq "GET") {
             $systemTweaks = @()
             try { $systemTweaks = Get-SystemTweaks } catch { Write-Host "[ERRO] Falha ao obter SystemTweaks: $($_.Exception.Message)" -ForegroundColor Red }
@@ -296,4 +325,3 @@ try {
     }
     Write-Host "[$(Get-Date)] [INFO] Motor a vapor desligado." -ForegroundColor DarkRed
 }
-
