@@ -1,23 +1,34 @@
-# servidor.ps1 - LinaOptimizer Web Server - ULTIMATE V8.0 (MASTERPIECE)
+# servidor.ps1 - LinaOptimizer Web Server
 # Encoding: UTF-8 with BOM
 
-# --- Configurações --- #
 $port = 8080
 $webRoot = Join-Path $PSScriptRoot "web"
 $modulesPath = Join-Path $PSScriptRoot "modules"
 
-# --- Carregar Módulos PowerShell --- #
-$moduleFiles = @("system.ps1", "network.ps1", "kernel.ps1", "games.ps1", "AppsManager.ps1", "power.ps1", "PerformanceBrain.ps1", "BenchmarkEngine.ps1", "TelemetryStore.ps1", "SafetyGuard.ps1")
+$moduleFiles = @(
+    "system.ps1",
+    "network.ps1",
+    "kernel.ps1",
+    "power.ps1",
+    "debloat.ps1",
+    "games.ps1",
+    "AppsManager.ps1",
+    "PerformanceBrain.ps1",
+    "BenchmarkEngine.ps1",
+    "TelemetryStore.ps1",
+    "SafetyGuard.ps1",
+    "backup.ps1"
+)
+
 foreach ($moduleFile in $moduleFiles) {
     try {
         Import-Module (Join-Path $modulesPath $moduleFile) -ErrorAction Stop
         Write-Host "[INFO] Módulo $moduleFile carregado com sucesso." -ForegroundColor Green
     } catch {
-        Write-Host "[ERRO] Falha ao carregar módulo $moduleFile: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[ERRO] Falha ao carregar módulo ${moduleFile}: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
-# --- Funções Auxiliares para o Servidor --- #
 function Send-HttpResponse {
     param(
         [System.Net.HttpListenerResponse]$Response,
@@ -25,6 +36,7 @@ function Send-HttpResponse {
         [string]$ContentType = "text/html",
         [string]$Content = ""
     )
+
     $Response.StatusCode = $StatusCode
     $Response.ContentType = $ContentType
     $buffer = [System.Text.Encoding]::UTF8.GetBytes($Content)
@@ -36,9 +48,11 @@ function Send-HttpResponse {
 function Send-Json {
     param(
         [System.Net.HttpListenerResponse]$Response,
-        $Data
+        $Data,
+        [int]$StatusCode = 200
     )
-    Send-HttpResponse -Response $Response -StatusCode 200 -ContentType "application/json" -Content ($Data | ConvertTo-Json -Depth 10)
+
+    Send-HttpResponse -Response $Response -StatusCode $StatusCode -ContentType "application/json" -Content ($Data | ConvertTo-Json -Depth 12)
 }
 
 function Send-File {
@@ -47,48 +61,114 @@ function Send-File {
         [string]$FilePath,
         [string]$ContentType
     )
-    if (Test-Path $FilePath) {
-        $bytes = [System.IO.File]::ReadAllBytes($FilePath)
-        $Response.StatusCode = 200
-        $Response.ContentType = $ContentType
-        $Response.ContentLength64 = $bytes.Length
-        $Response.OutputStream.Write($bytes, 0, $bytes.Length)
-        $Response.OutputStream.Close()
-    } else {
+
+    if (-not (Test-Path $FilePath)) {
         Send-HttpResponse -Response $Response -StatusCode 404 -Content "404 Not Found"
+        return
+    }
+
+    $bytes = [System.IO.File]::ReadAllBytes($FilePath)
+    $Response.StatusCode = 200
+    $Response.ContentType = $ContentType
+    $Response.ContentLength64 = $bytes.Length
+    $Response.OutputStream.Write($bytes, 0, $bytes.Length)
+    $Response.OutputStream.Close()
+}
+
+function Read-JsonBody {
+    param([System.Net.HttpListenerRequest]$Request)
+
+    $reader = New-Object System.IO.StreamReader($Request.InputStream, $Request.ContentEncoding)
+    $body = $reader.ReadToEnd()
+    if ([string]::IsNullOrWhiteSpace($body)) { return @{} }
+    return $body | ConvertFrom-Json
+}
+
+function Try-Invoke {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [object[]]$Arguments = @(),
+        [object]$Fallback = $null
+    )
+
+    if (-not (Get-Command -Name $Name -ErrorAction SilentlyContinue)) {
+        Write-Host "[WARN] Comando '$Name' indisponível. Fallback aplicado." -ForegroundColor DarkYellow
+        return $Fallback
+    }
+
+    try {
+        return & $Name @Arguments
+    } catch {
+        Write-Host "[ERRO] Falha ao executar '$Name': $($_.Exception.Message)" -ForegroundColor Red
+        return $Fallback
     }
 }
 
-# --- Configurar Firewall para Acesso Remoto --- #
+function Get-AllTweaks {
+    $all = @()
+
+    foreach ($fn in @("Get-SystemTweaks", "Get-NetworkTweaks", "Get-KernelTweaks", "Get-PowerTweaks", "Get-DebloatTweaks")) {
+        $result = Try-Invoke -Name $fn -Fallback @()
+        if ($null -eq $result) { $result = @() }
+
+        foreach ($t in @($result)) {
+            $all += @{
+                id = $t.id
+                name = if ($t.title) { $t.title } else { $t.name }
+                description = $t.description
+                category = if ($t.category) { $t.category } else { "Sistema" }
+                risk = if ($t.risk) {
+                    switch -Regex ($t.risk.ToString().ToLower()) {
+                        "high|alto" { "Alto"; break }
+                        "medium|m[eé]dio" { "Médio"; break }
+                        default { "Baixo" }
+                    }
+                } else { "Baixo" }
+                status = $false
+                rebootRequired = [bool]$t.needsRestart
+                warning = if ($t.risk -match "high|alto") { "Tweak avançado. Use com atenção." } else { $null }
+                module = $fn
+                raw = $t
+            }
+        }
+        Write-Host "[DEBUG] $fn retornou $(@($result).Count) tweaks." -ForegroundColor DarkCyan
+    }
+
+    Write-Host "[DEBUG] Total de tweaks agregados: $($all.Count)" -ForegroundColor DarkCyan
+    return $all
+}
+
+function Find-TweakRawById {
+    param([string]$TweakId)
+
+    $all = Get-AllTweaks
+    return ($all | Where-Object { $_.id -eq $TweakId } | Select-Object -First 1)
+}
+
 function Configure-Firewall {
-    param(
-        [int]$Port
-    )
+    param([int]$Port)
+
     $ruleName = "LinaOptimizer Web Server"
     if (-not (Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue)) {
-        Write-Host "Configurando Firewall para permitir acesso na porta $Port..." -ForegroundColor Yellow
-        New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -LocalPort $Port -Protocol TCP -Action Allow -Enabled True -ErrorAction SilentlyContinue
-        Write-Host "Regra de Firewall criada com sucesso." -ForegroundColor Green
-    } else {
-        Write-Host "Regra de Firewall já existe." -ForegroundColor DarkYellow
+        Write-Host "Configurando Firewall na porta $Port..." -ForegroundColor Yellow
+        New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -LocalPort $Port -Protocol TCP -Action Allow -Enabled True -ErrorAction SilentlyContinue | Out-Null
     }
 }
 
-# --- Iniciar Servidor --- #
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://+:$port/")
-
 Configure-Firewall -Port $port
 
 try {
     $listener.Start()
-    $ip = (Test-Connection -ComputerName (hostname) -Count 1).IPV4Address.IPAddressToString
-    Write-Host "[$(Get-Date)] [INFO] Motor a vapor iniciado!" -ForegroundColor Green
-    Write-Host "Acesse localmente: http://localhost:$port" -ForegroundColor Cyan
-    Write-Host "Acesse na rede: http://${ip}:$port" -ForegroundColor Cyan
+    Write-Host "[INFO] Servidor iniciado em http://localhost:$port" -ForegroundColor Green
 
-    # Abrir navegador automaticamente
-    Start-Process "http://localhost:$port"
+    try {
+        Start-Process "http://localhost:$port" | Out-Null
+        Write-Host "[INFO] Navegador aberto automaticamente." -ForegroundColor Green
+    } catch {
+        Write-Host "[WARN] Não foi possível abrir o navegador automaticamente: $($_.Exception.Message)" -ForegroundColor DarkYellow
+    }
 
     while ($listener.IsListening) {
         $context = $listener.GetContext()
@@ -98,176 +178,119 @@ try {
         $path = $request.Url.LocalPath
         $method = $request.HttpMethod
 
-        # --- Rotas da API --- #
         if ($path -eq "/api/system-info" -and $method -eq "GET") {
-            Send-Json -Response $response -Data (Get-HardwareInfo)
-        } elseif ($path -eq "/api/tweaks" -and $method -eq "GET") {
-            $systemTweaks = @()
-            try { $systemTweaks = Get-SystemTweaks } catch { Write-Host "[ERRO] Falha ao obter SystemTweaks: $($_.Exception.Message)" -ForegroundColor Red }
-            Write-Host "[DEBUG] Get-SystemTweaks retornou $($systemTweaks.Count) tweaks." -ForegroundColor DarkCyan
-
-            $networkTweaks = @()
-            try { $networkTweaks = Get-NetworkTweaks } catch { Write-Host "[ERRO] Falha ao obter NetworkTweaks: $($_.Exception.Message)" -ForegroundColor Red }
-            Write-Host "[DEBUG] Get-NetworkTweaks retornou $($networkTweaks.Count) tweaks." -ForegroundColor DarkCyan
-
-            $kernelTweaks = @()
-            try { $kernelTweaks = Get-KernelTweaks } catch { Write-Host "[ERRO] Falha ao obter KernelTweaks: $($_.Exception.Message)" -ForegroundColor Red }
-            Write-Host "[DEBUG] Get-KernelTweaks retornou $($kernelTweaks.Count) tweaks." -ForegroundColor DarkCyan
-
-            $powerTweaks = @()
-            try { $powerTweaks = Get-PowerTweaks } catch { Write-Host "[ERRO] Falha ao obter PowerTweaks: $($_.Exception.Message)" -ForegroundColor Red }
-            Write-Host "[DEBUG] Get-PowerTweaks retornou $($powerTweaks.Count) tweaks." -ForegroundColor DarkCyan
-
-            $debloatTweaks = @()
-            try { $debloatTweaks = Get-DebloatTweaks } catch { Write-Host "[ERRO] Falha ao obter DebloatTweaks: $($_.Exception.Message)" -ForegroundColor Red }
-            Write-Host "[DEBUG] Get-DebloatTweaks retornou $($debloatTweaks.Count) tweaks." -ForegroundColor DarkCyan
-
-            $safetyGuardTweaks = @()
-            try { $safetyGuardTweaks = Get-SafetyGuardTweaks } catch { Write-Host "[ERRO] Falha ao obter SafetyGuardTweaks: $($_.Exception.Message)" -ForegroundColor Red }
-            Write-Host "[DEBUG] Get-SafetyGuardTweaks retornou $($safetyGuardTweaks.Count) tweaks." -ForegroundColor DarkCyan
-
-            $allTweaks = @(
-                $systemTweaks,
-                $networkTweaks,
-                $kernelTweaks,
-                $powerTweaks,
-                $debloatTweaks,
-                $safetyGuardTweaks
-            ) | Select-Object -ExpandProperty *
-            Write-Host "[DEBUG] Total de tweaks agregados: $($allTweaks.Count)" -ForegroundColor DarkCyan
-            Send-Json -Response $response -Data @{ tweaks = $allTweaks }
-        } elseif ($path -eq "/api/tweak-status" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $tweakId = $data.tweakId
-            $module = $data.module
-
-            $status = $false
-            switch ($module) {
-                "System" { $status = Get-SystemTweakStatus -TweakId $tweakId }
-                "Network" { $status = Get-NetworkTweakStatus -TweakId $tweakId }
-                "Kernel" { $status = Get-KernelTweakStatus -TweakId $tweakId }
-                "Power" { $status = Get-PowerTweakStatus -TweakId $tweakId }
-                "Debloat" { $status = Get-DebloatTweakStatus -TweakId $tweakId }
-                "Safety" { $status = Get-SafetyGuardTweakStatus -TweakId $tweakId }
-            }
-            Send-Json -Response $response -Data @{ id = $tweakId; status = $status }
-        } elseif ($path -eq "/api/apply-tweak" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $tweakId = $data.tweakId
-            $module = $data.module
-
-            $result = @{ success = $false; message = "Módulo não encontrado." }
-            switch ($module) {
-                "System" { $result = Apply-SystemTweak -TweakId $tweakId }
-                "Network" { $result = Apply-NetworkTweak -TweakId $tweakId }
-                "Kernel" { $result = Apply-KernelTweak -TweakId $tweakId }
-                "Power" { $result = Apply-PowerTweak -TweakId $tweakId }
-                "Debloat" { $result = Apply-DebloatTweak -TweakId $tweakId }
-                "Safety" { $result = Apply-SafetyGuardTweak -TweakId $tweakId }
-            }
-            Send-Json -Response $response -Data $result
-        } elseif ($path -eq "/api/revert-tweak" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $tweakId = $data.tweakId
-            $module = $data.module
-
-            $result = @{ success = $false; message = "Módulo não encontrado." }
-            switch ($module) {
-                "System" { $result = Revert-SystemTweak -TweakId $tweakId }
-                "Network" { $result = Revert-NetworkTweak -TweakId $tweakId }
-                "Kernel" { $result = Revert-KernelTweak -TweakId $tweakId }
-                "Power" { $result = Revert-PowerTweak -TweakId $tweakId }
-                "Debloat" { $result = Revert-DebloatTweak -TweakId $tweakId }
-                "Safety" { $result = Revert-SafetyGuardTweak -TweakId $tweakId }
-            }
-            Send-Json -Response $response -Data $result
-        } elseif ($path -eq "/api/games" -and $method -eq "GET") {
-            $gameTweaks = @()
-            try { $gameTweaks = Get-GameTweaks } catch { Write-Host "[ERRO] Falha ao obter GameTweaks: $($_.Exception.Message)" -ForegroundColor Red }
-            Write-Host "[DEBUG] Get-GameTweaks retornou $($gameTweaks.Count) jogos." -ForegroundColor DarkCyan
-            Send-Json -Response $response -Data @{ games = $gameTweaks }
-        } elseif ($path -eq "/api/game-status" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $gameId = $data.gameId
-            Send-Json -Response $response -Data (Get-GameStatus -GameId $gameId)
-        } elseif ($path -eq "/api/apply-game-tweak" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $gameId = $data.gameId
-            $intensity = $data.intensity
-            Send-Json -Response $response -Data (Apply-GameTweak -GameId $gameId -Intensity $intensity)
-        } elseif ($path -eq "/api/set-game-path" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $gameId = $data.gameId
-            $path = $data.path
-            Send-Json -Response $response -Data (Set-GamePath -GameId $gameId -Path $path)
-        } elseif ($path -eq "/api/apps" -and $method -eq "GET") {
-            $appTweaks = @()
-            try { $appTweaks = Get-AppsManagerTweaks } catch { Write-Host "[ERRO] Falha ao obter AppsManagerTweaks: $($_.Exception.Message)" -ForegroundColor Red }
-            Write-Host "[DEBUG] Get-AppsManagerTweaks retornou $($appTweaks.Count) apps." -ForegroundColor DarkCyan
-            Send-Json -Response $response -Data @{ apps = $appTweaks }
-        } elseif ($path -eq "/api/app-status" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $appId = $data.appId
-            Send-Json -Response $response -Data (Get-AppsManagerTweakStatus -AppId $appId)
-        } elseif ($path -eq "/api/install-app" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $appId = $data.appId
-            Send-Json -Response $response -Data (Apply-AppsManagerTweak -TweakId $appId)
-        } elseif ($path -eq "/api/create-restore-point" -and $method -eq "POST") {
-            Send-Json -Response $response -Data (Create-RestorePoint)
-        } elseif ($path -eq "/api/systeminfo" -and $method -eq "GET") {
-            Send-Json -Response $response -Data @{ systemInfo = (Get-HardwareInfo) }
-        } elseif ($path -eq "/api/hardware-info" -and $method -eq "GET") {
-            Send-Json -Response $response -Data (Get-HardwareInfo)
-        } elseif ($path -eq "/api/benchmark" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $type = $data.type # 'cpu', 'ram', 'disk'
-            Send-Json -Response $response -Data (Run-Benchmark -Type $type)
-        } elseif ($path -eq "/api/telemetry" -and $method -eq "GET") {
-            Send-Json -Response $response -Data (Get-TelemetryLogs)
-        } elseif ($path -eq "/api/clear-telemetry" -and $method -eq "POST") {
-            Send-Json -Response $response -Data (Clear-TelemetryLogs)
-        } elseif ($path -eq "/api/get-restore-points" -and $method -eq "GET") {
-            Send-Json -Response $response -Data (Get-SystemRestorePoints)
-        } elseif ($path -eq "/api/restore-system" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $sequenceNumber = $data.sequenceNumber
-            Send-Json -Response $response -Data (Restore-System -SequenceNumber $sequenceNumber)
-        } elseif ($path -eq "/api/backup-registry" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $keyPath = $data.keyPath
-            $backupPath = $data.backupPath
-            Send-Json -Response $response -Data (Backup-RegistryKey -KeyPath $keyPath -BackupPath $backupPath)
-        } elseif ($path -eq "/api/restore-registry" -and $method -eq "POST") {
-            $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
-            $body = $reader.ReadToEnd()
-            $data = $body | ConvertFrom-Json
-            $backupPath = $data.backupPath
-            Send-Json -Response $response -Data (Restore-RegistryKey -BackupPath $backupPath)
+            $info = Try-Invoke -Name "Get-SystemInfo" -Fallback @{}
+            Send-Json -Response $response -Data $info
         }
-        # --- Servir arquivos estáticos --- #
+        elseif ($path -eq "/api/systeminfo" -and $method -eq "GET") {
+            $info = Try-Invoke -Name "Get-SystemInfo" -Fallback @{}
+            Send-Json -Response $response -Data @{ systemInfo = $info }
+        }
+        elseif ($path -eq "/api/hardware-info" -and $method -eq "GET") {
+            $info = Try-Invoke -Name "Get-SystemInfo" -Fallback @{}
+            Send-Json -Response $response -Data $info
+        }
+        elseif ($path -eq "/api/tweaks" -and $method -eq "GET") {
+            Send-Json -Response $response -Data @{ tweaks = (Get-AllTweaks) }
+        }
+        elseif ($path -eq "/api/tweak-status" -and $method -eq "POST") {
+            $data = Read-JsonBody -Request $request
+            $entry = Find-TweakRawById -TweakId $data.tweakId
+            if (-not $entry) {
+                Send-Json -Response $response -StatusCode 404 -Data @{ id = $data.tweakId; status = $false; error = "Tweak não encontrado." }
+            } else {
+                try {
+                    $status = [bool](Invoke-Command -ScriptBlock $entry.raw.detect)
+                    Send-Json -Response $response -Data @{ id = $data.tweakId; status = $status }
+                } catch {
+                    Send-Json -Response $response -Data @{ id = $data.tweakId; status = $false; error = $_.Exception.Message }
+                }
+            }
+        }
+        elseif ($path -eq "/api/apply-tweak" -and $method -eq "POST") {
+            $data = Read-JsonBody -Request $request
+            $entry = Find-TweakRawById -TweakId $data.tweakId
+            if (-not $entry) {
+                Send-Json -Response $response -StatusCode 404 -Data @{ success = $false; message = "Tweak não encontrado." }
+            } else {
+                try {
+                    Invoke-Command -ScriptBlock $entry.raw.apply
+                    Send-Json -Response $response -Data @{ success = $true; message = "Tweak aplicado com sucesso." }
+                } catch {
+                    Send-Json -Response $response -Data @{ success = $false; message = $_.Exception.Message }
+                }
+            }
+        }
+        elseif ($path -eq "/api/revert-tweak" -and $method -eq "POST") {
+            $data = Read-JsonBody -Request $request
+            $entry = Find-TweakRawById -TweakId $data.tweakId
+            if (-not $entry) {
+                Send-Json -Response $response -StatusCode 404 -Data @{ success = $false; message = "Tweak não encontrado." }
+            } else {
+                try {
+                    Invoke-Command -ScriptBlock $entry.raw.revert
+                    Send-Json -Response $response -Data @{ success = $true; message = "Tweak revertido com sucesso." }
+                } catch {
+                    Send-Json -Response $response -Data @{ success = $false; message = $_.Exception.Message }
+                }
+            }
+        }
+        elseif ($path -eq "/api/games" -and $method -eq "GET") {
+            $games = Try-Invoke -Name "Get-GameList" -Fallback @()
+            $gameDtos = @()
+            foreach ($game in @($games)) {
+                $gameDtos += @{
+                    id = $game.id
+                    name = $game.name
+                    description = "Perfis de otimização de jogo"
+                    detected = [bool](Try-Invoke -Name "Get-GameInstallPath" -Arguments @($game.id) -Fallback $null)
+                }
+            }
+            Write-Host "[DEBUG] Get-GameList retornou $($gameDtos.Count) jogos." -ForegroundColor DarkCyan
+            Send-Json -Response $response -Data @{ games = $gameDtos }
+        }
+        elseif ($path -eq "/api/apply-game-tweak" -and $method -eq "POST") {
+            $data = Read-JsonBody -Request $request
+            $level = if ($data.intensity) { $data.intensity } else { "medium" }
+            $result = Try-Invoke -Name "Apply-GameTweak" -Arguments @($data.gameId, $level) -Fallback @{ success = $false; message = "Função indisponível" }
+            Send-Json -Response $response -Data $result
+        }
+        elseif ($path -eq "/api/apps" -and $method -eq "GET") {
+            $apps = Try-Invoke -Name "Get-EssentialApps" -Fallback @()
+            $appDtos = @()
+            foreach ($app in @($apps)) {
+                $installed = $false
+                try { $installed = [bool](Invoke-Command -ScriptBlock $app.detect) } catch { $installed = $false }
+                $appDtos += @{
+                    id = $app.id
+                    name = $app.name
+                    description = $app.description
+                    icon = "box"
+                    installed = $installed
+                }
+            }
+            Write-Host "[DEBUG] Get-EssentialApps retornou $($appDtos.Count) apps." -ForegroundColor DarkCyan
+            Send-Json -Response $response -Data @{ apps = $appDtos }
+        }
+        elseif ($path -eq "/api/app-status" -and $method -eq "POST") {
+            $data = Read-JsonBody -Request $request
+            $result = Try-Invoke -Name "Get-AppStatus" -Arguments @($data.appId) -Fallback @{ id = $data.appId; status = $false }
+            Send-Json -Response $response -Data $result
+        }
+        elseif ($path -eq "/api/install-app" -and $method -eq "POST") {
+            $data = Read-JsonBody -Request $request
+            $result = Try-Invoke -Name "Install-App" -Arguments @($data.appId) -Fallback @{ success = $false; message = "Função indisponível" }
+            Send-Json -Response $response -Data $result
+        }
+        elseif ($path -eq "/api/create-restore-point" -and $method -eq "POST") {
+            $result = Try-Invoke -Name "Create-RestorePoint" -Fallback @{ success = $false; message = "Função indisponível" }
+            Send-Json -Response $response -Data $result
+        }
+        elseif ($path -eq "/api/benchmark" -and $method -eq "POST") {
+            $data = Read-JsonBody -Request $request
+            $result = Try-Invoke -Name "Run-Benchmark" -Arguments @($data.type) -Fallback @{ success = $false; message = "Função indisponível" }
+            Send-Json -Response $response -Data $result
+        }
         else {
             $filePath = Join-Path $webRoot $path
             if ($path -eq "/") { $filePath = Join-Path $webRoot "index.html" }
@@ -287,13 +310,14 @@ try {
             Send-File -Response $response -FilePath $filePath -ContentType $contentType
         }
     }
-} catch {
-    Write-Host "[$(Get-Date)] [ERRO CRITICO] $($_.Exception.Message)" -ForegroundColor Red
-} finally {
-    if ($listener.IsListening) {
+}
+catch {
+    Write-Host "[ERRO CRÍTICO] $($_.Exception.Message)" -ForegroundColor Red
+}
+finally {
+    if ($listener -and $listener.IsListening) {
         $listener.Stop()
         $listener.Close()
     }
-    Write-Host "[$(Get-Date)] [INFO] Motor a vapor desligado." -ForegroundColor DarkRed
+    Write-Host "[INFO] Servidor finalizado." -ForegroundColor DarkRed
 }
-

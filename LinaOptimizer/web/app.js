@@ -1,281 +1,433 @@
 // Encoding: UTF-8 with BOM
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[LinaOptimizer] Iniciando aplicação...');
+    const $ = (id) => document.getElementById(id);
 
-    const langToggle = document.getElementById('lang-toggle');
-    const categoryPicker = document.getElementById('category-picker');
-    const tweakListContainer = document.getElementById('tweak-list-container');
-    const searchInput = document.getElementById('search-input');
-    const systemInfoContainer = document.getElementById('system-info-container');
-    const optimizationScoreDisplay = document.getElementById('optimization-score');
-    const restorePointBtn = document.getElementById('create-restore-point-btn');
-    const gameListContainer = document.getElementById('game-list-container');
-    const appListContainer = document.getElementById('app-list-container');
-    const toastContainer = document.getElementById('toast-container');
-    const mainContent = document.getElementById('main-content');
+    const dom = {
+        categoryPicker: $('category-picker'),
+        tweakList: $('tweak-list-container'),
+        gamesList: $('game-list-container'),
+        appsList: $('app-list-container'),
+        systemInfo: $('system-info-container'),
+        searchInput: $('search-input'),
+        modeSelect: $('mode-select'),
+        dryRunToggle: $('dry-run-toggle'),
+        logsOutput: $('logs-output'),
+        scoreOverall: $('score-overall'),
+        scoreDetail: $('score-detail'),
+        tweaksSection: $('tweaks-section'),
+        gamesSection: $('games-section'),
+        appsSection: $('apps-section'),
+        btnApplyRecommended: $('activate-optimizations'),
+        btnSnapshot: $('snapshot-btn'),
+        btnRollbackAll: $('rollback-all-btn'),
+        btnRestorePoint: $('create-restore-point-btn'),
+        btnExportLogs: $('export-logs-btn'),
+        langPt: $('lang-pt'),
+        langEn: $('lang-en')
+    };
 
-    let currentLang = 'pt';
-    let allTweaks = [];
-    let allGames = [];
-    let allApps = [];
-    let systemInfo = {};
-    let currentActiveCategory = 'Sistema';
+    const state = {
+        lang: 'pt',
+        mode: 'safe',
+        dryRun: false,
+        activeCategory: 'Sistema',
+        tweaks: [],
+        games: [],
+        apps: [],
+        systemInfo: {},
+        logs: [],
+        snapshots: JSON.parse(localStorage.getItem('linaoptimizer_snapshots') || '[]'),
+        apiBase: '',
+        apiResolved: false
+    };
 
-    // --- Dados de Fallback para Testes --- //
-    const fallbackTweaks = [
-        { id: 'DisableWindowsUpdate', name: 'Desativar Windows Update', description: 'Desativa atualizações automáticas do Windows', category: 'Sistema', risk: 'Médio', status: false, rebootRequired: true },
-        { id: 'DisableTelemetry', name: 'Desativar Telemetria', description: 'Remove coleta de dados da Microsoft', category: 'Privacidade', risk: 'Baixo', status: false, rebootRequired: false },
-        { id: 'OptimizeNetwork', name: 'Otimizar Rede', description: 'Melhora velocidade de conexão', category: 'Rede', risk: 'Baixo', status: false, rebootRequired: false }
-    ];
+    const fallback = {
+        tweaks: [
+            { id: 'DisableTelemetry', name: 'Desativar Telemetria', description: 'Reduz coleta de dados.', category: 'Privacidade', risk: 'Baixo', rebootRequired: false, status: false },
+            { id: 'OptimizeNetwork', name: 'Otimizar Rede', description: 'Reduz latência de rede.', category: 'Rede', risk: 'Baixo', rebootRequired: false, status: false },
+            { id: 'DisableHPET', name: 'Desativar HPET', description: 'Pode reduzir latência.', category: 'Kernel', risk: 'Médio', rebootRequired: true, status: false },
+            { id: 'DisableCoreIsolation', name: 'Desativar Core Isolation', description: 'Aumenta desempenho com risco de segurança.', category: 'Segurança', risk: 'Alto', rebootRequired: true, status: false, warning: 'Use só se entender os riscos.' }
+        ],
+        games: [
+            { id: 'CS2', name: 'Counter-Strike 2', description: 'Perfil competitivo', detected: false },
+            { id: 'Valorant', name: 'Valorant', description: 'Perfil baixa latência', detected: false }
+        ],
+        apps: [
+            { id: 'Discord', name: 'Discord', description: 'Comunicação', icon: '🎙️', installed: false },
+            { id: 'OBSStudio', name: 'OBS Studio', description: 'Streaming', icon: '📹', installed: false }
+        ],
+        systemInfo: { os: 'Windows', cpu: 'N/A', gpu: 'N/A', ram: 'N/A', scores: { overall: 0, cpu: 0, gpu: 0, ram: 0, disk: 0, network: 0 } }
+    };
 
-    const fallbackGames = [
-        { id: 'Valorant', name: 'Valorant', description: 'Otimizações para Valorant', detected: false, paths: [] },
-        { id: 'CS2', name: 'Counter-Strike 2', description: 'Otimizações para CS2', detected: false, paths: [] },
-        { id: 'Fortnite', name: 'Fortnite', description: 'Otimizações para Fortnite', detected: false, paths: [] }
-    ];
+    const categorySpecial = ['Jogos', 'Apps Essenciais'];
 
-    const fallbackApps = [
-        { id: 'Discord', name: 'Discord', description: 'Aplicativo de comunicação', icon: '🎙️', installed: false },
-        { id: 'OBS', name: 'OBS Studio', description: 'Software de streaming', icon: '📹', installed: false },
-        { id: 'Steam', name: 'Steam', description: 'Plataforma de jogos', icon: '🎮', installed: false }
-    ];
-
-    // --- Funções Auxiliares --- //
-    function showToast(message, type = 'info') {
-        console.log(`[Toast] ${type.toUpperCase()}: ${message}`);
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        toastContainer.appendChild(toast);
-        setTimeout(() => {
-            toast.classList.add('hide');
-            toast.addEventListener('transitionend', () => toast.remove());
-        }, 3000);
+    function log(level, action, data = {}) {
+        const row = {
+            ts: new Date().toISOString(),
+            level,
+            action,
+            mode: state.mode,
+            dryRun: state.dryRun,
+            data
+        };
+        state.logs.push(row);
+        if (state.logs.length > 200) state.logs.shift();
+        dom.logsOutput.textContent = state.logs.slice(-30).map(i => `[${i.ts}] [${i.level.toUpperCase()}] ${i.action} ${JSON.stringify(i.data)}`).join('\n');
     }
 
-    // --- Fetch Data from Backend --- //
-    async function fetchAllData() {
-        console.log('[API] Iniciando fetch de dados...');
-        try {
-            const tweaksRes = await fetch('/api/tweaks').then(r => {
-                console.log('[API] Resposta /api/tweaks:', r.status);
-                return r.json();
-            }).catch(e => {
-                console.error('[API] Erro ao buscar /api/tweaks:', e);
-                return { tweaks: fallbackTweaks };
-            });
+    async function resolveApiBase() {
+        if (state.apiResolved) return;
 
-            const gamesRes = await fetch('/api/games').then(r => {
-                console.log('[API] Resposta /api/games:', r.status);
-                return r.json();
-            }).catch(e => {
-                console.error('[API] Erro ao buscar /api/games:', e);
-                return { games: fallbackGames };
-            });
-
-            const appsRes = await fetch('/api/apps').then(r => {
-                console.log('[API] Resposta /api/apps:', r.status);
-                return r.json();
-            }).catch(e => {
-                console.error('[API] Erro ao buscar /api/apps:', e);
-                return { apps: fallbackApps };
-            });
-
-            const systemInfoRes = await fetch('/api/systeminfo').then(r => {
-                console.log('[API] Resposta /api/systeminfo:', r.status);
-                return r.json();
-            }).catch(e => {
-                console.error('[API] Erro ao buscar /api/systeminfo:', e);
-                return { systemInfo: { cpu: 'N/A', gpu: 'N/A', ram: 'N/A', os: 'Windows 10/11' } };
-            });
-
-            allTweaks = tweaksRes.tweaks || fallbackTweaks;
-            allGames = gamesRes.games || fallbackGames;
-            allApps = appsRes.apps || fallbackApps;
-            systemInfo = systemInfoRes.systemInfo || {};
-
-            console.log('[Data] Tweaks carregados:', allTweaks.length);
-            console.log('[Data] Jogos carregados:', allGames.length);
-            console.log('[Data] Apps carregados:', allApps.length);
-
-            renderUI();
-            updateSystemInfo();
-            calculateOptimizationScore();
-        } catch (error) {
-            console.error('[Fatal] Erro ao carregar dados:', error);
-            showToast('Erro ao carregar dados. Usando dados de fallback.', 'warning');
-            allTweaks = fallbackTweaks;
-            allGames = fallbackGames;
-            allApps = fallbackApps;
-            renderUI();
+        const candidates = [''];
+        if (window.location.port !== '8080') {
+            candidates.push('http://127.0.0.1:8080', 'http://localhost:8080');
         }
+
+        for (const base of candidates) {
+            try {
+                const r = await fetch(`${base}/api/system-info`, { method: 'GET' });
+                if (r.ok) {
+                    state.apiBase = base;
+                    state.apiResolved = true;
+                    log('info', 'api_base_resolved', { base: base || 'same-origin' });
+                    return;
+                }
+            } catch {
+                // tenta próximo candidato
+            }
+        }
+
+        state.apiBase = '';
+        state.apiResolved = true;
+        log('warn', 'api_base_unresolved', { mode: 'fallback_only' });
     }
 
-    // --- Render UI --- //
-    function renderUI() {
-        console.log('[Render] Iniciando renderização da UI...');
-        renderCategoryPicker();
-        renderContent();
+    async function api(url, options = {}, fallbackData) {
+        await resolveApiBase();
+
+        const candidates = state.apiBase ? [`${state.apiBase}${url}`, url] : [url];
+        let lastError = null;
+
+        for (const target of candidates) {
+            try {
+                const res = await fetch(target, options);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (e) {
+                lastError = e;
+            }
+        }
+
+        log('warn', 'api_fallback', { url, error: lastError ? lastError.message : 'unknown' });
+        return fallbackData;
     }
 
-    function renderCategoryPicker() {
-        categoryPicker.innerHTML = '';
-        const allCategories = ['Sistema', 'Privacidade', 'Rede', 'Kernel', 'Energia', 'Debloat', 'Interface', 'Input', 'Jogos', 'Apps Essenciais'];
+    function riskMeta(risk) {
+        const key = String(risk || '').toLowerCase();
+        if (key.includes('alto') || key.includes('high')) return { label: 'Alto', css: 'risk-high' };
+        if (key.includes('médio') || key.includes('medio') || key.includes('medium')) return { label: 'Médio', css: 'risk-medium' };
+        return { label: 'Baixo', css: 'risk-low' };
+    }
 
-        allCategories.forEach(category => {
-            const button = document.createElement('button');
-            button.className = `category-tab ${currentActiveCategory === category ? 'active' : ''}`;
-            button.dataset.category = category;
-            button.textContent = category;
-            button.addEventListener('click', () => {
-                currentActiveCategory = category;
-                document.querySelectorAll('.category-tab').forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                renderContent();
+    function getCategories() {
+        const fromData = [...new Set(state.tweaks.map(t => t.category).filter(Boolean))];
+        return [...fromData, ...categorySpecial.filter(c => !fromData.includes(c))];
+    }
+
+    function setSection(section) {
+        dom.tweaksSection.classList.add('hidden');
+        dom.gamesSection.classList.add('hidden');
+        dom.appsSection.classList.add('hidden');
+        if (section === 'games') dom.gamesSection.classList.remove('hidden');
+        else if (section === 'apps') dom.appsSection.classList.remove('hidden');
+        else dom.tweaksSection.classList.remove('hidden');
+    }
+
+    function renderCategories() {
+        const categories = getCategories();
+        if (!categories.includes(state.activeCategory)) state.activeCategory = categories[0] || 'Sistema';
+        dom.categoryPicker.innerHTML = '';
+
+        const frag = document.createDocumentFragment();
+        categories.forEach(cat => {
+            const b = document.createElement('button');
+            b.textContent = cat;
+            b.className = state.activeCategory === cat ? 'active' : '';
+            b.addEventListener('click', () => {
+                state.activeCategory = cat;
+                render();
             });
-            categoryPicker.appendChild(button);
+            frag.appendChild(b);
         });
+        dom.categoryPicker.appendChild(frag);
     }
 
-    function renderContent() {
-        console.log('[Render] Renderizando categoria:', currentActiveCategory);
-        document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+    function renderSystemInfo() {
+        const info = state.systemInfo || {};
+        const cards = [
+            ['Sistema', info.os || 'N/A'],
+            ['CPU', info.cpu || 'N/A'],
+            ['GPU', info.gpu || 'N/A'],
+            ['RAM', info.ram || 'N/A'],
+            ['Build', info.build || 'N/A'],
+            ['Classe', info.hardwareClass || 'N/A'],
+            ['Rede', info.networkAdapter || 'N/A'],
+            ['Disco', info.diskType || 'N/A']
+        ];
+        dom.systemInfo.innerHTML = cards.map(([k, v]) => `<div class="card"><strong>${k}</strong><div class="muted">${v}</div></div>`).join('');
 
-        if (currentActiveCategory === 'Jogos') {
-            document.getElementById('games-section').classList.add('active');
-            renderGames();
-        } else if (currentActiveCategory === 'Apps Essenciais') {
-            document.getElementById('apps-section').classList.add('active');
-            renderApps();
-        } else {
-            document.getElementById('tweaks-section').classList.add('active');
-            renderTweaks(currentActiveCategory);
-        }
+        const scores = info.scores || {};
+        dom.scoreOverall.textContent = `${scores.overall ?? '--'}`;
+        dom.scoreDetail.textContent = `CPU ${scores.cpu ?? '--'} | GPU ${scores.gpu ?? '--'} | RAM ${scores.ram ?? '--'} | Disco ${scores.disk ?? '--'} | Rede ${scores.network ?? '--'}`;
     }
 
-    function renderTweaks(category) {
-        tweakListContainer.innerHTML = '';
-        const filteredTweaks = allTweaks.filter(tweak => tweak.category === category);
+    function filteredTweaks() {
+        const q = dom.searchInput.value.trim().toLowerCase();
+        return state.tweaks
+            .filter(t => t.category === state.activeCategory)
+            .filter(t => !q || `${t.name} ${t.description} ${t.category}`.toLowerCase().includes(q));
+    }
 
-        if (filteredTweaks.length === 0) {
-            tweakListContainer.innerHTML = '<p style="text-align: center; color: #999;">Nenhum tweak disponível nesta categoria.</p>';
+    async function applyTweakRemote(tweakId, enabled) {
+        const endpoint = enabled ? '/api/apply-tweak' : '/api/revert-tweak';
+        const body = JSON.stringify({ tweakId });
+        return await api(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }, { success: false, message: 'fallback' });
+    }
+
+    function renderTweaks() {
+        setSection('tweaks');
+        const items = filteredTweaks();
+        if (items.length === 0) {
+            dom.tweakList.innerHTML = '<div class="card">Nenhum tweak nessa categoria/filtro.</div>';
             return;
         }
 
-        filteredTweaks.forEach(tweak => {
-            const tweakCard = document.createElement('div');
-            tweakCard.className = 'tweak-card glassmorphism';
-            tweakCard.innerHTML = `
-                <div class="tweak-header">
-                    <h3>${tweak.name}</h3>
-                    <label class="switch">
-                        <input type="checkbox" data-tweak-id="${tweak.id}" ${tweak.status ? 'checked' : ''}>
-                        <span class="slider round"></span>
-                    </label>
+        const frag = document.createDocumentFragment();
+        items.forEach(t => {
+            const risk = riskMeta(t.risk);
+            const el = document.createElement('article');
+            el.className = 'card tweak-card';
+            el.innerHTML = `
+                <div class="row">
+                    <h3>${t.name}</h3>
+                    <input class="switch" type="checkbox" ${t.status ? 'checked' : ''}>
                 </div>
-                <p class="tweak-description">${tweak.description}</p>
-                <div class="tweak-meta">
-                    <span class="risk ${tweak.risk.toLowerCase()}">${tweak.risk}</span>
-                    ${tweak.rebootRequired ? '<span class="reboot-required">Reinício Necessário</span>' : ''}
+                <p>${t.description || ''}</p>
+                ${t.warning ? `<p><strong>Aviso:</strong> ${t.warning}</p>` : ''}
+                <div class="row">
+                    <span class="badge ${risk.css}">${risk.label}</span>
+                    <span class="muted">${t.rebootRequired ? 'Reinício necessário' : 'Sem reinício'}</span>
                 </div>
             `;
-            tweakListContainer.appendChild(tweakCard);
+
+            const sw = el.querySelector('.switch');
+            sw.addEventListener('change', async () => {
+                if (risk.css === 'risk-high' && state.mode === 'safe') {
+                    sw.checked = false;
+                    log('warn', 'blocked_high_risk_in_safe_mode', { id: t.id });
+                    return;
+                }
+
+                if (state.dryRun) {
+                    sw.checked = t.status;
+                    log('info', 'dry_run_toggle_tweak', { id: t.id, desired: !t.status });
+                    return;
+                }
+
+                const desired = sw.checked;
+                const remote = await applyTweakRemote(t.id, desired);
+                if (remote.success === false) {
+                    sw.checked = !desired;
+                    log('error', 'remote_tweak_failed', { id: t.id, message: remote.message });
+                    return;
+                }
+                t.status = desired;
+                log('info', desired ? 'tweak_applied' : 'tweak_reverted', { id: t.id });
+            });
+
+            frag.appendChild(el);
         });
+        dom.tweakList.innerHTML = '';
+        dom.tweakList.appendChild(frag);
     }
 
     function renderGames() {
-        gameListContainer.innerHTML = '';
-        if (allGames.length === 0) {
-            gameListContainer.innerHTML = '<p style="text-align: center; color: #999;">Nenhum jogo disponível.</p>';
-            return;
-        }
-
-        allGames.forEach(game => {
-            const gameCard = document.createElement('div');
-            gameCard.className = 'game-card glassmorphism';
-            gameCard.innerHTML = `
-                <h3>${game.name}</h3>
-                <p>${game.description}</p>
-                <div class="game-status">
-                    <span class="status-badge ${game.detected ? 'detected' : 'not-found'}">
-                        ${game.detected ? '✓ DETECTADO' : '✗ NÃO ENCONTRADO'}
-                    </span>
-                </div>
-                <select class="game-intensity">
-                    <option value="light">Leve</option>
-                    <option value="medium" selected>Média</option>
-                    <option value="heavy">Pesada</option>
-                </select>
-                <button class="btn-apply-game">APLICAR OTIMIZAÇÃO</button>
+        setSection('games');
+        dom.gamesList.innerHTML = '';
+        const frag = document.createDocumentFragment();
+        state.games.forEach(g => {
+            const el = document.createElement('article');
+            el.className = 'card';
+            el.innerHTML = `
+                <h3 style="margin:0 0 8px">${g.name}</h3>
+                <p>${g.description || ''}</p>
+                <div class="row"><span class="badge ${g.detected ? 'risk-low' : 'risk-medium'}">${g.detected ? 'Detectado' : 'Não detectado'}</span>
+                <button>Aplicar Perfil</button></div>
             `;
-            gameListContainer.appendChild(gameCard);
+            el.querySelector('button').addEventListener('click', async () => {
+                if (state.dryRun) {
+                    log('info', 'dry_run_game_apply', { gameId: g.id, mode: state.mode });
+                    return;
+                }
+                const res = await api('/api/apply-game-tweak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gameId: g.id, intensity: state.mode === 'safe' ? 'light' : state.mode === 'extreme' ? 'medium' : 'heavy' })
+                }, { success: false });
+                log(res.success ? 'info' : 'error', 'game_apply', { gameId: g.id, result: res });
+            });
+            frag.appendChild(el);
         });
+        dom.gamesList.appendChild(frag);
     }
 
     function renderApps() {
-        appListContainer.innerHTML = '';
-        if (allApps.length === 0) {
-            appListContainer.innerHTML = '<p style="text-align: center; color: #999;">Nenhum app disponível.</p>';
+        setSection('apps');
+        dom.appsList.innerHTML = '';
+        const frag = document.createDocumentFragment();
+        state.apps.forEach(a => {
+            const el = document.createElement('article');
+            el.className = 'card';
+            el.innerHTML = `
+                <h3 style="margin:0 0 8px">${a.icon || '📦'} ${a.name}</h3>
+                <p>${a.description || ''}</p>
+                <div class="row"><span class="badge ${a.installed ? 'risk-low' : 'risk-medium'}">${a.installed ? 'Instalado' : 'Não instalado'}</span>
+                <button>${a.installed ? 'Reinstalar' : 'Instalar'}</button></div>
+            `;
+            el.querySelector('button').addEventListener('click', async () => {
+                if (state.dryRun) {
+                    log('info', 'dry_run_install_app', { appId: a.id });
+                    return;
+                }
+                const res = await api('/api/install-app', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ appId: a.id })
+                }, { success: false });
+                log(res.success ? 'info' : 'error', 'install_app', { appId: a.id, result: res });
+            });
+            frag.appendChild(el);
+        });
+        dom.appsList.appendChild(frag);
+    }
+
+    function render() {
+        renderCategories();
+        if (state.activeCategory === 'Jogos') renderGames();
+        else if (state.activeCategory === 'Apps Essenciais') renderApps();
+        else renderTweaks();
+    }
+
+    function createSnapshot(kind = 'manual') {
+        const snapshot = {
+            ts: new Date().toISOString(),
+            kind,
+            mode: state.mode,
+            tweaks: state.tweaks.map(t => ({ id: t.id, status: t.status }))
+        };
+        state.snapshots.push(snapshot);
+        if (state.snapshots.length > 30) state.snapshots.shift();
+        localStorage.setItem('linaoptimizer_snapshots', JSON.stringify(state.snapshots));
+        log('info', 'snapshot_created', { kind, total: state.snapshots.length });
+    }
+
+    function rollbackAll() {
+        if (state.dryRun) {
+            log('warn', 'dry_run_rollback_all', {});
             return;
         }
+        state.tweaks.forEach(t => { t.status = false; });
+        log('warn', 'rollback_all', { total: state.tweaks.length });
+        render();
+    }
 
-        allApps.forEach(app => {
-            const appCard = document.createElement('div');
-            appCard.className = 'app-card glassmorphism';
-            appCard.innerHTML = `
-                <div class="app-icon">${app.icon || '📦'}</div>
-                <h3>${app.name}</h3>
-                <p>${app.description}</p>
-                <button class="btn-install-app" data-app-id="${app.id}">
-                    ${app.installed ? 'DESINSTALAR' : 'INSTALAR'}
-                </button>
-            `;
-            appListContainer.appendChild(appCard);
+    async function loadData() {
+        const [tRes, gRes, aRes, sRes] = await Promise.all([
+            api('/api/tweaks', {}, { tweaks: fallback.tweaks }),
+            api('/api/games', {}, { games: fallback.games }),
+            api('/api/apps', {}, { apps: fallback.apps }),
+            api('/api/system-info', {}, { systemInfo: fallback.systemInfo })
+        ]);
+
+        state.tweaks = (tRes.tweaks || fallback.tweaks).map(t => ({
+            id: t.id,
+            name: t.name || t.title || t.id,
+            description: t.description || '',
+            category: t.category || 'Sistema',
+            risk: t.risk || 'Baixo',
+            rebootRequired: Boolean(t.rebootRequired || t.needsRestart),
+            warning: t.warning,
+            status: Boolean(t.status)
+        }));
+
+        state.games = gRes.games || fallback.games;
+        state.apps = aRes.apps || fallback.apps;
+        state.systemInfo = sRes.systemInfo || sRes || fallback.systemInfo;
+
+        renderSystemInfo();
+        render();
+        log('info', 'data_loaded', { tweaks: state.tweaks.length, games: state.games.length, apps: state.apps.length });
+    }
+
+    function bindEvents() {
+        dom.searchInput.addEventListener('input', () => render());
+        dom.modeSelect.addEventListener('change', () => {
+            state.mode = dom.modeSelect.value;
+            log('info', 'mode_changed', { mode: state.mode });
+        });
+        dom.dryRunToggle.addEventListener('change', () => {
+            state.dryRun = dom.dryRunToggle.checked;
+            log('info', 'dry_run_changed', { dryRun: state.dryRun });
+        });
+
+        dom.btnApplyRecommended.addEventListener('click', () => {
+            const allowed = state.tweaks.filter(t => !riskMeta(t.risk).css.includes('high'));
+            if (state.dryRun) {
+                log('info', 'dry_run_apply_recommended', { total: allowed.length });
+                return;
+            }
+            allowed.forEach(t => { t.status = true; });
+            log('info', 'apply_recommended', { total: allowed.length });
+            render();
+        });
+
+        dom.btnSnapshot.addEventListener('click', () => createSnapshot('manual'));
+        dom.btnRollbackAll.addEventListener('click', rollbackAll);
+        dom.btnRestorePoint.addEventListener('click', async () => {
+            createSnapshot('pre-restore-point');
+            if (state.dryRun) {
+                log('info', 'dry_run_restore_point', {});
+                return;
+            }
+            const res = await api('/api/create-restore-point', { method: 'POST' }, { success: false });
+            log(res.success ? 'info' : 'error', 'create_restore_point', res);
+        });
+
+        dom.btnExportLogs.addEventListener('click', () => {
+            const blob = new Blob([JSON.stringify(state.logs, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `linaoptimizer-logs-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        dom.langPt.addEventListener('click', () => {
+            state.lang = 'pt';
+            dom.langPt.classList.add('active');
+            dom.langEn.classList.remove('active');
+            log('info', 'lang', { lang: 'pt' });
+        });
+        dom.langEn.addEventListener('click', () => {
+            state.lang = 'en';
+            dom.langEn.classList.add('active');
+            dom.langPt.classList.remove('active');
+            log('info', 'lang', { lang: 'en' });
         });
     }
 
-    function updateSystemInfo() {
-        if (systemInfoContainer) {
-            systemInfoContainer.innerHTML = `
-                <h2>INFORMAÇÕES DO SISTEMA</h2>
-                <p><strong>CPU:</strong> ${systemInfo.cpu || 'N/A'}</p>
-                <p><strong>GPU:</strong> ${systemInfo.gpu || 'N/A'}</p>
-                <p><strong>RAM:</strong> ${systemInfo.ram || 'N/A'}</p>
-                <p><strong>SO:</strong> ${systemInfo.os || 'Windows 10/11'}</p>
-            `;
-        }
-    }
-
-    function calculateOptimizationScore() {
-        const totalTweaks = allTweaks.length;
-        const activeTweaks = allTweaks.filter(t => t.status).length;
-        const score = totalTweaks > 0 ? Math.round((activeTweaks / totalTweaks) * 100) : 0;
-        if (optimizationScoreDisplay) {
-            optimizationScoreDisplay.innerHTML = `
-                <h2>SCORE DE OTIMIZAÇÃO</h2>
-                <p>Seu sistema está otimizado em <strong>${score}%</strong>.</p>
-            `;
-        }
-    }
-
-    // --- Event Listeners --- //
-    if (langToggle) {
-        langToggle.addEventListener('click', () => {
-            currentLang = currentLang === 'pt' ? 'en' : 'pt';
-            langToggle.textContent = currentLang.toUpperCase();
-            console.log('[Lang] Idioma alterado para:', currentLang);
-        });
-    }
-
-    if (restorePointBtn) {
-        restorePointBtn.addEventListener('click', () => {
-            console.log('[Action] Criando ponto de restauração...');
-            showToast('Ponto de restauração criado com sucesso!', 'success');
-        });
-    }
-
-    // Initial Load
-    console.log('[Init] Carregando dados iniciais...');
-    fetchAllData();
+    bindEvents();
+    loadData();
 });
