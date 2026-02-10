@@ -232,9 +232,9 @@ try {
         } elseif ($path -eq "/api/create-restore-point" -and $method -eq "POST") {
             Send-Json -Response $response -Data (Create-RestorePoint)
         } elseif ($path -eq "/api/systeminfo" -and $method -eq "GET") {
-            Send-Json -Response $response -Data @{ systemInfo = (Get-HardwareInfo) }
+            Send-Json -Response $response -Data @{ systemInfo = (Get-SystemInfo) }
         } elseif ($path -eq "/api/hardware-info" -and $method -eq "GET") {
-            Send-Json -Response $response -Data (Get-HardwareInfo)
+            Send-Json -Response $response -Data (Get-SystemInfo)
         } elseif ($path -eq "/api/benchmark" -and $method -eq "POST") {
             $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
             $body = $reader.ReadToEnd()

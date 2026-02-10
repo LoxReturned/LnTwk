@@ -278,6 +278,67 @@
             display: block;
         }
 
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .control-panel .control-item {
+            background: var(--bg-medium);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .control-panel input[type="text"],
+        .control-panel select {
+            width: 100%;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 7px;
+        }
+
+        .control-panel button {
+            width: 100%;
+            border: 1px solid var(--border-color);
+            background: var(--bg-light);
+            color: var(--text-light);
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .logs-panel {
+            background: var(--bg-medium);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 16px;
+        }
+
+        #logs-output {
+            width: 100%;
+            min-height: 120px;
+            max-height: 220px;
+            overflow: auto;
+            background: #08090c;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            white-space: pre-wrap;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 12px;
+            color: #b9f5ff;
+        }
+
         .tweak-card {
             background-color: var(--bg-medium);
             border: 1px solid var(--border-color);
@@ -711,11 +772,23 @@
 
         <section class="tweaks-section container content-section" id="tweaks-section">
             <h2 class="section-title" data-lang-key="tweaks_title">OTIMIZAÇÃO DE SISTEMA</h2>
+            <div class="control-panel">
+                <div class="control-item"><input type="text" id="search-input" placeholder="Buscar tweak, tag ou descrição..."></div>
+                <div class="control-item"><label for="mode-select">Modo</label><select id="mode-select"><option value="safe">Seguro</option><option value="extreme">Extremo</option><option value="insane">Insano</option></select></div>
+                <div class="control-item"><label><input type="checkbox" id="dry-run-toggle"> Dry-run</label></div>
+                <div class="control-item"><button id="snapshot-btn">Snapshot</button></div>
+                <div class="control-item"><button id="rollback-all-btn">Rollback Global</button></div>
+                <div class="control-item"><button id="export-logs-btn">Exportar Logs JSON</button></div>
+            </div>
             <div class="category-picker" id="category-picker">
                 <!-- Category buttons will be rendered here by app.js -->
             </div>
             <div class="tweak-grid" id="tweak-list-container">
                 <!-- Tweak cards will be rendered here by app.js -->
+            </div>
+            <div class="logs-panel">
+                <h3>Logs</h3>
+                <pre id="logs-output"></pre>
             </div>
         </section>
 
