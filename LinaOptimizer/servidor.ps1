@@ -1,4 +1,4 @@
-# servidor.ps1 - LinaOptimizer Web Server
+﻿# servidor.ps1 - LinaOptimizer Web Server
 # Encoding: UTF-8 with BOM
 
 $port = 8080
@@ -23,9 +23,9 @@ $moduleFiles = @(
 foreach ($moduleFile in $moduleFiles) {
     try {
         Import-Module (Join-Path $modulesPath $moduleFile) -ErrorAction Stop
-        Write-Host "[INFO] Módulo $moduleFile carregado com sucesso." -ForegroundColor Green
+        Write-Host "[INFO] Modulo $moduleFile carregado com sucesso." -ForegroundColor Green
     } catch {
-        Write-Host "[ERRO] Falha ao carregar módulo ${moduleFile}: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[ERRO] Falha ao carregar modulo ${moduleFile}: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
@@ -92,7 +92,7 @@ function Try-Invoke {
     )
 
     if (-not (Get-Command -Name $Name -ErrorAction SilentlyContinue)) {
-        Write-Host "[WARN] Comando '$Name' indisponível. Fallback aplicado." -ForegroundColor DarkYellow
+        Write-Host "[WARN] Comando '$Name' indisponivel. Fallback aplicado." -ForegroundColor DarkYellow
         return $Fallback
     }
 
@@ -190,7 +190,7 @@ try {
             $data = Read-JsonBody -Request $request
             $entry = Find-TweakRawById -TweakId $data.tweakId
             if (-not $entry) {
-                Send-Json -Response $response -StatusCode 404 -Data @{ id = $data.tweakId; status = $false; error = "Tweak não encontrado." }
+                Send-Json -Response $response -StatusCode 404 -Data @{ id = $data.tweakId; status = $false; error = "Tweak nao encontrado." }
             } else {
                 try {
                     $status = [bool](Invoke-Command -ScriptBlock $entry.raw.detect)
@@ -204,7 +204,7 @@ try {
             $data = Read-JsonBody -Request $request
             $entry = Find-TweakRawById -TweakId $data.tweakId
             if (-not $entry) {
-                Send-Json -Response $response -StatusCode 404 -Data @{ success = $false; message = "Tweak não encontrado." }
+                Send-Json -Response $response -StatusCode 404 -Data @{ success = $false; message = "Tweak nao encontrado." }
             } else {
                 try {
                     Invoke-Command -ScriptBlock $entry.raw.apply
@@ -218,7 +218,7 @@ try {
             $data = Read-JsonBody -Request $request
             $entry = Find-TweakRawById -TweakId $data.tweakId
             if (-not $entry) {
-                Send-Json -Response $response -StatusCode 404 -Data @{ success = $false; message = "Tweak não encontrado." }
+                Send-Json -Response $response -StatusCode 404 -Data @{ success = $false; message = "Tweak nao encontrado." }
             } else {
                 try {
                     Invoke-Command -ScriptBlock $entry.raw.revert
@@ -235,7 +235,7 @@ try {
                 $gameDtos += @{
                     id = $game.id
                     name = $game.name
-                    description = "Perfis de otimização de jogo"
+                    description = "Perfis de otimizacao de jogo"
                     detected = [bool](Try-Invoke -Name "Get-GameInstallPath" -Arguments @($game.id) -Fallback $null)
                 }
             }
@@ -245,7 +245,7 @@ try {
         elseif ($path -eq "/api/apply-game-tweak" -and $method -eq "POST") {
             $data = Read-JsonBody -Request $request
             $level = if ($data.intensity) { $data.intensity } else { "medium" }
-            $result = Try-Invoke -Name "Apply-GameTweak" -Arguments @($data.gameId, $level) -Fallback @{ success = $false; message = "Função indisponível" }
+            $result = Try-Invoke -Name "Apply-GameTweak" -Arguments @($data.gameId, $level) -Fallback @{ success = $false; message = "Funcao indisponivel" }
             Send-Json -Response $response -Data $result
         }
         elseif ($path -eq "/api/apps" -and $method -eq "GET") {
@@ -258,7 +258,7 @@ try {
                     id = $app.id
                     name = $app.name
                     description = $app.description
-                    icon = "📦"
+                    icon = "APP"
                     installed = $installed
                 }
             }
@@ -272,16 +272,16 @@ try {
         }
         elseif ($path -eq "/api/install-app" -and $method -eq "POST") {
             $data = Read-JsonBody -Request $request
-            $result = Try-Invoke -Name "Install-App" -Arguments @($data.appId) -Fallback @{ success = $false; message = "Função indisponível" }
+            $result = Try-Invoke -Name "Install-App" -Arguments @($data.appId) -Fallback @{ success = $false; message = "Funcao indisponivel" }
             Send-Json -Response $response -Data $result
         }
         elseif ($path -eq "/api/create-restore-point" -and $method -eq "POST") {
-            $result = Try-Invoke -Name "Create-RestorePoint" -Fallback @{ success = $false; message = "Função indisponível" }
+            $result = Try-Invoke -Name "Create-RestorePoint" -Fallback @{ success = $false; message = "Funcao indisponivel" }
             Send-Json -Response $response -Data $result
         }
         elseif ($path -eq "/api/benchmark" -and $method -eq "POST") {
             $data = Read-JsonBody -Request $request
-            $result = Try-Invoke -Name "Run-Benchmark" -Arguments @($data.type) -Fallback @{ success = $false; message = "Função indisponível" }
+            $result = Try-Invoke -Name "Run-Benchmark" -Arguments @($data.type) -Fallback @{ success = $false; message = "Funcao indisponivel" }
             Send-Json -Response $response -Data $result
         }
         else {
@@ -305,7 +305,7 @@ try {
     }
 }
 catch {
-    Write-Host "[ERRO CRÍTICO] $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "[ERRO CRITICO] $($_.Exception.Message)" -ForegroundColor Red
 }
 finally {
     if ($listener -and $listener.IsListening) {
