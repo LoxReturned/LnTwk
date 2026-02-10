@@ -163,6 +163,13 @@ try {
     $listener.Start()
     Write-Host "[INFO] Servidor iniciado em http://localhost:$port" -ForegroundColor Green
 
+    try {
+        Start-Process "http://localhost:$port" | Out-Null
+        Write-Host "[INFO] Navegador aberto automaticamente." -ForegroundColor Green
+    } catch {
+        Write-Host "[WARN] Não foi possível abrir o navegador automaticamente: $($_.Exception.Message)" -ForegroundColor DarkYellow
+    }
+
     while ($listener.IsListening) {
         $context = $listener.GetContext()
         $request = $context.Request
