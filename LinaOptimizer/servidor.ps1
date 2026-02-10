@@ -100,7 +100,7 @@ try {
 
         # --- Rotas da API --- #
         if ($path -eq "/api/system-info" -and $method -eq "GET") {
-            Send-Json -Response $response -Data (Get-HardwareInfo)
+            Send-Json -Response $response -Data (Get-SystemInfo)
         } elseif ($path -eq "/api/tweaks" -and $method -eq "GET") {
             $systemTweaks = @()
             try { $systemTweaks = Get-SystemTweaks } catch { Write-Host "[ERRO] Falha ao obter SystemTweaks: $($_.Exception.Message)" -ForegroundColor Red }

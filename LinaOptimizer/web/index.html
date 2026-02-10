@@ -292,6 +292,13 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
+        .tweak-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
         .tweak-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
@@ -469,6 +476,10 @@
             line-height: 1.6;
         }
 
+        .app-icon {
+            font-size: 1.8em;
+        }
+
         .app-card button {
             background-color: var(--accent-blue);
             color: var(--bg-dark);
@@ -571,6 +582,14 @@
             top: 20px;
             right: 20px;
             z-index: 2000;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
         }
 
         .toast {
